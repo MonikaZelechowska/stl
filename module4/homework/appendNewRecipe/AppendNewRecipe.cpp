@@ -6,10 +6,12 @@
 bool AppendNewRecipe(std::vector<std::string> steps,
                      const std::list<std::string>& ingredients,
                      const std::deque<std::pair<size_t, char>>& amount) {
-    std::fstream recipes("recipes.txt", recipes.out | recipes.app);
+    constexpr auto filename = "recipes.txt";
+    std::fstream recipes(filename, recipes.out | recipes.app);
 
-    if (!recipes.is_open())
+    if (!recipes.is_open()) {
         return false;
+    }
 
     std::stringstream recipiesSs = FormatRecipit(steps, ingredients, amount);
     recipes << recipiesSs.str();
@@ -34,7 +36,9 @@ std::vector<std::string> FormatIngredients(const std::list<std::string>& ingredi
                    amount.begin(),
                    std::back_inserter(formatedIngredientsVec),
                    [&amountString](const auto ingredient, const auto& value) {
-                       return (std::to_string(value.first) + ' ' + (amountString.find(value.second))->second + ' ' + ingredient);
+                       std::stringstream ss;
+                       ss << value.first << ' ' << (amountString.find(value.second))->second << ' ' << ingredient;
+                       return ss.str();
                    });
 
     return formatedIngredientsVec;
@@ -44,20 +48,23 @@ std::stringstream FormatRecipit(std::vector<std::string> steps,
                                 const std::list<std::string>& ingredients,
                                 const std::deque<std::pair<size_t, char>>& amount) {
     std::stringstream outputSs;
-    outputSs << "Skladniki:\n";
-    std::vector<std::string> ingredientsVector = FormatIngredients(ingredients, amount);
-    std::all_of(ingredientsVector.begin(),
-                ingredientsVector.end(),
-                [&outputSs](const auto& ingredientData) {
-                    outputSs << ingredientData << ",\n";
-                    return true;
-                });
 
-    outputSs << "\nKroki:\n";
+    constexpr auto ingredientsStr = "Skladniki:\n";
+    outputSs << ingredientsStr;
+    std::vector<std::string> ingredientsVector = FormatIngredients(ingredients, amount);
+    std::for_each(ingredientsVector.begin(),
+                  ingredientsVector.end(),
+                  [&outputSs](const auto& ingredientData) { outputSs << ingredientData << ",\n"; });
+
+    constexpr auto stepsStr = "\nKroki:\n";
+    outputSs << stepsStr;
     for (size_t counter = 0; counter < steps.size(); counter++) {
         outputSs << counter + 1 << ") " << steps[counter] << ".\n";
     }
-    outputSs << "___________________________________\n";
+
+    constexpr int separatorCount = 35;
+    std::string separator(separatorCount, '_');
+    outputSs << separator << '\n';
 
     return outputSs;
 }
